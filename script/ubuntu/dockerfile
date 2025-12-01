@@ -1,0 +1,131 @@
+# 1. 基础镜像: riscv64/ubuntu:jammy (对应 ROS 2 Humble)
+ARG ARM_ARCH=riscv64
+FROM ${ARM_ARCH}/ubuntu:22.04
+
+# 2. 设置环境变量和 Locale
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && \
+    apt-get install -y locales && \
+    locale-gen en_US.UTF-8 && \
+    update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+ENV LANG=en_US.UTF-8 \
+    LC_ALL=en_US.UTF-8 \
+    ROS_version=humble
+
+# 3. 安装构建工具和依赖 (APT)
+# 整合了之前的依赖，并补充了 LTTng (性能分析工具) 防止报错
+RUN apt-get update && \
+    apt-get install -y \
+    build-essential \
+    cmake \
+    git \
+    curl \
+    wget \
+    # Python 基础
+    python3-pip \
+    python3-yaml \
+    python3-dev \
+    python3-numpy \
+    python3-lxml \
+    python3-netifaces \
+    # 核心 C++ 依赖
+    libeigen3-dev \
+    libacl1-dev \
+    libx11-dev \
+    libxaw7-dev \
+    libldap2-dev \
+    libssl-dev \
+    # LTTng (重要修复: Humble 经常需要这两个包)
+    liblttng-ust-dev \
+    liblttng-ctl-dev \
+    # Qt5 / GUI (Ubuntu 22.04 的 Qt5 比较稳定，可以尝试保留)
+    qtbase5-dev \
+    libqt5svg5-dev \
+    libqt5x11extras5-dev \
+    qttools5-dev \
+    python3-pyqt5 \
+    python3-sip \
+    # 其他依赖
+    libfreetype-dev \
+    ninja-build \
+    libopencv-dev \
+    libbullet-dev \
+    libtinyxml2-dev \
+    libasio-dev \
+    libxml2-dev \
+    libxslt-dev \
+    libyaml-cpp-dev \
+    libsqlite3-dev \
+    libcurl4-openssl-dev \
+    libzip-dev \
+    libgts-dev \
+    libgl1-mesa-dev \
+    libglu1-mesa-dev \
+    libglx-dev \
+    libfreeimage-dev \
+    libncurses-dev \
+    libncursesw5-dev \
+    x11-apps \
+    xauth \
+    mesa-utils \
+    # 如果系统没有 sip-tools，可能需要 pip 安装，视具体情况而定
+    && rm -rf /var/lib/apt/lists/*
+
+# 4. 安装 Python 工具 (PIP)
+# 锁定关键版本，保持与 Humble 官方推荐一致
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
+RUN pip3 install --upgrade pip setuptools wheel
+RUN pip3 install -U \
+    colcon-common-extensions \
+    vcstool \
+    rosdepc \
+    argcomplete \
+    flake8 \
+    # Humble 推荐 empy 3.3.4
+    empy==3.3.4 \
+    lark \
+    pytest \
+    pytest-repeat \
+    pytest-rerunfailures
+
+# 5. 初始化 rosdepc
+RUN rosdepc init
+RUN rosdepc update
+
+# 6. 创建工作区并下载源码
+# --- <--- 修改点: 使用 jialog0301 仓库 (Humble 分支) ---
+RUN mkdir -p /ros2_ws/src
+WORKDIR /ros2_ws
+# 注意：这里假设你的仓库里有 humble 分支。如果没有，你可能需要手动指定官方地址
+RUN wget https://raw.githubusercontent.com/jialog0301/ros2/humble/ros2.repos \
+    && vcs import src < ros2.repos
+
+# 7. 安装源码依赖 (Rosdep)
+# 跳过 Mimick 以便手动修复
+RUN rosdepc install -i --from-path src --rosdistro humble -y \
+    --skip-keys "fastrtps rti-connext-dds-6.0.1 mimick"
+
+# 8. 应用 Mimick 补丁 (暴力适配版)
+# 使用正则表达式替换，比旧脚本的 Hash 替换更通用、更稳健
+RUN sed -i 's|GIT_REPOSITORY https://github.com/ros2/Mimick.git|GIT_REPOSITORY https://github.com/ziyao233/Mimick.git|' /ros2_ws/src/ros2/mimick_vendor/CMakeLists.txt && \
+    sed -i 's|GIT_TAG .*|GIT_TAG 90d02296025f38da2e33c67b02b7fa0c7c7d460c|' /ros2_ws/src/ros2/mimick_vendor/CMakeLists.txt && \
+    sed -i 's/FATAL_ERROR/WARNING/g' /ros2_ws/src/ros2/mimick_vendor/CMakeLists.txt
+
+# 9. 编译 ROS 2 (官方结构化)
+# --- <--- 核心修改点 ---
+# 1. --merge-install: 将所有包合并到 /opt/ros/humble/lib, bin 等，而不是分散在 install/ 下
+# 2. --install-base: 指定安装位置，模仿官方 .deb 安装路径
+# 3. 跳过 heavy GUI (Rviz/Gazebo) 但尝试保留基础 GUI
+RUN colcon build --event-handlers console_cohesion+ \
+    --merge-install \
+    --install-base /opt/ros/humble \
+    --packages-skip rviz2 rviz_common rviz_rendering rviz_ogre_vendor rviz_default_plugins rviz_rendering_tests \
+    --packages-skip-regex "ignition_.*" "gazebo_.*" "rviz_.*" \
+    --cmake-args -Wno-dev -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release
+
+# 10. 设置环境
+# 自动 source 官方路径
+ENV QT_X11_NO_MITSHM=1
+RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
+WORKDIR /
+CMD ["bash"]
