@@ -75,12 +75,14 @@ WORKDIR /ros2_ws
 # 2. 额外克隆 ros2/variants，因为它定义了什么是 "ros_base"
 RUN wget https://raw.githubusercontent.com/jialog0301/ros2/humble/ros2.repos \
     && vcs import src < ros2.repos \
-    && git clone -b humble https://github.com/ros2/variants src/ros2/variants
+    && git clone -b humble https://github.com/ros2/variants src/ros2/variants \
+    && wget https://raw.githubusercontent.com/jialog0301/ros2/humble/slam.repos \
+    && vcs import src < slam.repos 
 
 # 7. 安装源码依赖 (Rosdep)
 # 跳过 GUI 和不需要的中间件
 RUN rosdepc install -i --from-path src --rosdistro humble -y \
-    --skip-keys "fastrtps rti-connext-dds-6.0.1 mimick qt_gui_cpp sip python3-sip"
+    --skip-keys "fastrtps rti-connext-dds-6.0.1 mimick qt_gui_cpp sip python3-sip rviz_common rviz_rendering rviz_default_plugins"
 
 
 RUN colcon build --event-handlers console_cohesion+ \

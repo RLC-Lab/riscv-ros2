@@ -1,0 +1,110 @@
+# 1. 基础镜像: 请根据你的实际情况修改
+ARG ARM_ARCH=riscv64
+FROM ${ARM_ARCH}/ubuntu:22.04
+
+# 2. 设置环境变量和 Locale
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && \
+    apt-get install -y locales && \
+    locale-gen en_US.UTF-8 && \
+    update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+ENV LANG=en_US.UTF-8 \
+    LC_ALL=en_US.UTF-8 \
+    ROS_DISTRO=humble
+
+# 3. 安装构建工具和基础依赖 (APT)
+# 注意：这里我们安装的是编译 Python 所需的构建依赖
+# 以及 ROS 2 需要的 C++ 库。
+RUN apt-get update && \
+    apt-get install -y \
+    build-essential cmake git curl wget \
+    # Python 编译依赖 (必须全)
+    libssl-dev zlib1g-dev libncurses5-dev libncursesw5-dev \
+    libreadline-dev libsqlite3-dev libgdbm-dev libdb5.3-dev libbz2-dev \
+    libexpat1-dev liblzma-dev libffi-dev uuid-dev \
+    # 核心 C++ 依赖
+    libeigen3-dev \
+    libacl1-dev \
+    libxml2-dev \
+    libxslt-dev \
+    libyaml-cpp-dev \
+    # LTTng (ROS 2 核心性能分析工具，Humble 必须)
+    liblttng-ust-dev \
+    liblttng-ctl-dev \
+    # 其他常用依赖
+    libtinyxml2-dev \
+    libasio-dev \
+    libbullet-dev \
+    libcurl4-openssl-dev \
+    libspdlog-dev \
+    ninja-build \
+    && rm -rf /var/lib/apt/lists/*
+
+# 4. --- 关键步骤：手动编译 Python ---
+# 请一定一定一定和你的运行环境保持一致，否则会出错。如果你能确定你的运行环境和
+# 构建环境一致，那么可以跳过这一步。
+WORKDIR /tmp
+RUN wget https://www.python.org/ftp/python/3.11.9/Python-3.11.9.tgz \
+    && tar -xvf Python-3.11.9.tgz \
+    && cd Python-3.11.9 \
+    # --enable-shared: 生成 libpython3.11.so (ROS 需要)
+    # --prefix=/usr: 安装到系统目录，替换系统默认 python
+    && ./configure --enable-shared --prefix=/usr LDFLAGS="-Wl,-rpath=/usr/lib" \
+    && make -j$(nproc) \
+    && make install \
+    && cd .. && rm -rf Python-3.11.9*
+
+# 5. 验证与修复
+# 此时 /usr/bin/python3 应该已经是 3.11 了。
+# 我们需要重新安装 pip (针对 3.11)
+RUN python3 -m ensurepip --upgrade && python3 -m pip install --upgrade pip
+
+# 6. 安装 ROS Python 依赖 (PIP)
+# 因为现在的 python3 是我们刚编译的纯净版 3.11，系统 apt 安装的 python3-yaml 等包无法使用
+# 所以必须全部用 pip 安装一遍
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
+RUN pip3 install -U \
+    colcon-common-extensions \
+    vcstool \
+    rosdepc \
+    empy==3.3.4 \
+    lark \
+    pytest \
+    catkin_pkg \
+    pyparsing \
+    pyyaml
+
+# 5. 初始化 rosdepc
+RUN rosdepc init
+RUN rosdepc update
+
+# 6. 创建工作区并下载源码
+RUN mkdir -p /ros2_ws/src
+WORKDIR /ros2_ws
+
+# 1. 下载你的仓库 (Humble 分支)
+RUN wget https://raw.githubusercontent.com/jialog0301/ros2/humble/ros2.repos \
+    && vcs import src < ros2.repos \
+    && git clone -b humble https://github.com/ros2/variants src/ros2/variants \
+    && wget https://raw.githubusercontent.com/jialog0301/ros2/humble/slam.repos \
+    && vcs import src < slam.repos 
+
+# 7. 安装源码依赖 (Rosdep)
+# 跳过 GUI 和不需要的中间件
+RUN rosdepc install -i --from-path src --rosdistro humble -y \
+    --skip-keys "fastrtps rti-connext-dds-6.0.1 mimick qt_gui_cpp sip python3-sip rviz_common rviz_rendering rviz_default_plugins"
+
+
+# 编译 ROS 2 (Python 3.11 版)
+# 强制指定 Python 路径，确保万无一失
+RUN colcon build --event-handlers console_cohesion+ \
+    --merge-install \
+    --install-base /opt/ros/humble \
+    --packages-up-to ros_base \
+    --cmake-args -Wno-dev -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release \
+    # 这里的路径和版本请修改为你实际的 Python 路径和版本
+    -DPython3_EXECUTABLE=/usr/bin/python3.11
+
+RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
+WORKDIR /
+CMD ["bash"]
