@@ -59,6 +59,8 @@ ros2 run demo_nodes_cpp listener
 ![](https://weijiale.oss-cn-shanghai.aliyuncs.com/picgo/20251211165113273.png)
 
 - SLAM Algorithms
+**The SLAM runs on the development board and is visualized on the PC.**
+  
 **Gmapping**:
 ![](https://weijiale.oss-cn-shanghai.aliyuncs.com/picgo/20251211165254338.png)
 
