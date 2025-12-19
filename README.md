@@ -34,22 +34,27 @@ The latest version can be found in the [GitHub](https://github.com/RLC-Lab/riscv
 https://github.com/RLC-Lab/riscv-ros2.git
 ```
 
-## Usage Guide
+## Getting Started
+
 [Set up the Environment](https://github.com/RLC-Lab/riscv-ros2/blob/main/tutorials/L01-setup.md) 
 
-[Build ROS2](https://github.com/RLC-Lab/riscv-ros2/blob/main/tutorials/L02-build.md)
-
-[Run LiDAR SLAM on ROS2](https://github.com/RLC-Lab/riscv-ros2/blob/main/tutorials/L03-Run-LiDAR-SLAM.md)
-
-[Run Visual SLAM on ROS2](https://github.com/RLC-Lab/riscv-ros2/blob/main/tutorials/L04-RUN-Visual-SLAM.md)
-
-## Using the Docker Image
+After completing the environment setup according to the guide, there are two methods:
+### Method 1:Using the Docker Image
 Pull the image:
 
 ```bash
 docker pull jialog/ros2_riscv_base:humble or jazzy
 ```
 You can run the image directly, or follow the [guide](https://github.com/RLC-Lab/riscv-ros2/blob/main/tutorials/L02-build.md#2-export-files) to export the compiled binaries.
+
+### Method 2:Build from Dockerfile
+If you need to modify the environment or dependencies, you can build it locally.
+[Build ROS2](https://github.com/RLC-Lab/riscv-ros2/blob/main/tutorials/L02-build.md)
+
+## Run SLAM on ROS2
+[Run LiDAR SLAM on ROS2](https://github.com/RLC-Lab/riscv-ros2/blob/main/tutorials/L03-Run-LiDAR-SLAM.md)
+
+[Run Visual SLAM on ROS2](https://github.com/RLC-Lab/riscv-ros2/blob/main/tutorials/L04-RUN-Visual-SLAM.md)
 
 ## Development & Test Environment
 
