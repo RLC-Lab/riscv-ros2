@@ -28,39 +28,93 @@ It offers more than just a fixed build script; it provides extensive customizabi
 
 ## Code
 
-The latest version can be found in the [GitHub](https://www.google.com/search?q=https://github.com/jialog0301/RVROS2.git) repository:
-
-
+The latest version can be found in the [GitHub](https://github.com/RLC-Lab/riscv-ros2.git) repository:
 
 ```bash
 https://github.com/RLC-Lab/riscv-ros2.git
 ```
 
 ## Usage Guide
-[Set up the Environment](https://github.com/RLC-Lab/riscv-ros2/blob/main/tutorials/L01-%E7%8E%AF%E5%A2%83%E5%87%86%E5%A4%87.md) 
+[Set up the Environment](https://github.com/RLC-Lab/riscv-ros2/blob/main/tutorials/L01-setup.md) 
 
-[Build ROS2](https://github.com/RLC-Lab/riscv-ros2/blob/main/tutorials/L02-%E7%BC%96%E8%AF%91%E5%AE%89%E8%A3%85ros2.md)
+[Build ROS2](https://github.com/RLC-Lab/riscv-ros2/blob/main/tutorials/L02-build.md)
 
-[Run LiDAR SLAM on ROS2](https://github.com/RLC-Lab/riscv-ros2/blob/main/tutorials/L03-%E8%BF%90%E8%A1%8C%E6%BF%80%E5%85%89SLAM%E7%AE%97%E6%B3%95.md)
+[Run LiDAR SLAM on ROS2](https://github.com/RLC-Lab/riscv-ros2/blob/main/tutorials/L03-Run-LiDAR-SLAM.md)
 
-[Run Visual SLAM on ROS2](https://github.com/RLC-Lab/riscv-ros2/blob/main/tutorials/L04-%E8%BF%90%E8%A1%8C%E8%A7%86%E8%A7%89SLAM%E7%AE%97%E6%B3%95.md)
+[Run Visual SLAM on ROS2](https://github.com/RLC-Lab/riscv-ros2/blob/main/tutorials/L04-RUN-Visual-SLAM.md)
+## Using the Docker Image
+Pull the image:
+
+```bash
+docker pull jialog/ros2_riscv_base:humble or jazzy
+```
+You can run the image directly, or follow the [guide](https://github.com/RLC-Lab/riscv-ros2/blob/main/tutorials/L02-build.md#2-export-files) to export the compiled binaries.
+
+## Development & Test Environment
+
+Ensure your setup meets these minimum specifications to build and run the project:
+
+* **Host Workstation:**
+  * **CPU:** No specific requirement.
+  * **RAM:** At least 16GB.
+* **Target Device:**
+  * **RAM:** At least 4GB.
+
+The project is developed and tested using the following setup:
+
+* **Host Workstation:**
+  * **CPU:** AMD Ryzen 9 9950X
+  * **RAM：** 128GB
+  * **OS:** Ubuntu 24.04 LTS
+* **Target Device:**
+  * **Hardware:** Milk-V Meles (RISC-V SOC TH1520)
+  * **RAM：** 16GB
+  * **OS:** RevyOS (based on Debian 13 Trixie)
+* **Network:** Both devices are connected to the same Local Area Network (LAN) via Wi-Fi.
+
 
 ## Verification & Demos
 
 - ros2 basic test
-```bash
-ros2 run demo_nodes_cpp talker
-```
-![](https://weijiale.oss-cn-shanghai.aliyuncs.com/picgo/20251211165107363.png)
+Test TF2 static transform publishing and listening.
 
-```bash
-ros2 run demo_nodes_cpp listener
+**Terminal 1 (Publisher):**
+
+```Bash
+ros2 run tf2_ros static_transform_publisher 1 1 1 0 0 0 /base_link /odom
 ```
-![](https://weijiale.oss-cn-shanghai.aliyuncs.com/picgo/20251211165113273.png)
+
+**Terminal 2 (Listener):**
+
+```Bash
+# Method A: Print transform info
+ros2 run tf2_ros tf2_echo base_link odom
+
+# Method B: Monitor frequency
+ros2 run tf2_ros tf2_monitor
+```
+![PixPin_2025-12-10_14-31-52.png|650](https://weijiale.oss-cn-shanghai.aliyuncs.com/picgo/20251210143156073.png)
+### 2. Distributed Communication Test
+
+Run nodes on both the development board and the PC to test cross-device communication.
+
+**Device A (e.g., Dev Board):**
+
+```Bash
+ros2 run tf2_ros static_transform_publisher 1 1 1 0 0 0 /base_link /odom
+```
+![PixPin_2025-12-10_14-30-38.png|650](https://weijiale.oss-cn-shanghai.aliyuncs.com/picgo/20251210143056219.png)
+**Device B (e.g., PC):**
+
+```Bash
+ros2 run tf2_ros tf2_echo base_link odom
+# Or
+ros2 run tf2_ros tf2_monitor
+```
+![PixPin_2025-12-10_14-31-18.png|650](https://weijiale.oss-cn-shanghai.aliyuncs.com/picgo/20251210143120637.png)
+
 
 - SLAM Algorithms
-**The SLAM runs on the development board and is visualized on the PC.**
-  
 **Gmapping**:
 ![](https://weijiale.oss-cn-shanghai.aliyuncs.com/picgo/20251211165254338.png)
 
