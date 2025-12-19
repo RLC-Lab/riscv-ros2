@@ -43,7 +43,12 @@ After completing the environment setup according to the guide, there are two met
 Pull the image:
 
 ```bash
-docker pull jialog/ros2_riscv_base:humble or jazzy
+docker pull jialog/ros2_riscv_base:humble 
+```
+or
+
+```bash
+docker pull jialog/ros2_riscv_base:jazzy
 ```
 You can run the image directly, or follow the [guide](https://github.com/RLC-Lab/riscv-ros2/blob/main/tutorials/L02-build.md#2-export-files) to export the compiled binaries.
 
