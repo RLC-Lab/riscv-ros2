@@ -93,6 +93,10 @@ All scripts and code required for compilation have been open-sourced on GitHub.
 
 The **most critical** aspect to note in the runtime environment is the Python version. Since using Conda, Pyenv, or UV on a RISC-V architecture system is not very convenient, ensure you verify the development board's Python environment at the very beginning of compilation, and try to maintain consistency across major versions.
 
+If you meet the following problem during operation:
+![PixPin_2025-12-23_18-48-34.png|650](https://weijiale.oss-cn-shanghai.aliyuncs.com/picgo/20251223191033585.png)
+It can be determined that it is caused by a Python version mismatch.
+
 Install missing dependencies for the runtime environment. This can largely follow the environment preparation in the build script; if it compiles successfully in Docker, there are usually no issues during runtime.
 
 ```bash
