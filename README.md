@@ -1,8 +1,7 @@
-# What is riscv-ros2?
+# Running ROS 2 and SLAM algorithms on RISC-V processors.
 
-This project provides a complete set of ROS 2 build scripts supporting the RISC-V architecture, along with experimental ports of several mainstream SLAM algorithms.
+This project provides a flexible, Docker-based build system designed to simplify the deployment of **ROS 2** and mainstream **SLAM algorithms** (like Gmapping, LIO-SAM) on **RISC-V** hardware. It handles the complexities of cross-compilation, enabling developers to focus on embodied intelligence research.
 
-It offers more than just a fixed build script; it provides extensive customizability. Users can fine-tune the project to meet specific requirements and flexibly build a usable ROS 2 environment. The project aims to maximize flexibility and portability through a script-based build approach.
 
 ## Key Features
 
